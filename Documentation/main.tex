@@ -1,0 +1,119 @@
+\documentclass{article}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{amsmath}
+\usepackage{graphicx}
+
+\begin{document}
+
+\title{Solving the 2D Convection-Diffusion Equation with a Source Term Using the ADI Method}
+\author{}
+\date{}
+\maketitle
+
+\section{Introduction}
+This document presents the **Alternating Direction Implicit (ADI) method** for solving the **two-dimensional convection-diffusion equation** with a **source term**. The source term represents external influences such as heat generation, chemical reactions, or localized perturbations. The ADI method efficiently handles implicit updates in one direction while keeping computations explicit in the other.
+
+\section{Mathematical Formulation}
+
+\subsection{Governing Equation with Source Term}
+The two-dimensional convection-diffusion equation with a **source term** is given by:
+
+\begin{equation}
+    \frac{\partial u}{\partial t} + a \frac{\partial u}{\partial x} + b \frac{\partial u}{\partial y} = \nu \left( \frac{\partial^2 u}{\partial x^2} + \frac{\partial^2 u}{\partial y^2} \right) + S(x,y,t),
+\end{equation}
+
+where:
+\begin{itemize}
+    \item \( u(x, y, t) \) is the transported scalar field (e.g., temperature, concentration).
+    \item \( a \), \( b \) are the convection velocities in the \( x \)- and \( y \)-directions.
+    \item \( \nu \) is the diffusion coefficient.
+    \item \( S(x,y,t) \) is the **source term**, which can be spatially and temporally dependent.
+    \item \( (x,y) \) are the spatial coordinates in a 2D domain.
+    \item \( t \) represents time.
+\end{itemize}
+
+\subsection{Discretized Form}
+Using a uniform spatial grid with spacing \( dx \) and \( dy \), and a time step \( dt \), the finite difference approximation of the equation is:
+
+\begin{equation}
+    \frac{u_{i,j}^{n+1} - u_{i,j}^{n}}{\Delta t} + a \frac{u_{i+1,j}^{n} - u_{i-1,j}^{n}}{2dx} + b \frac{u_{i,j+1}^{n} - u_{i,j-1}^{n}}{2dy} = \nu \left( \frac{u_{i+1,j}^{n} - 2u_{i,j}^{n} + u_{i-1,j}^{n}}{dx^2} + \frac{u_{i,j+1}^{n} - 2u_{i,j}^{n} + u_{i,j-1}^{n}}{dy^2} \right) + S_{i,j}^{n}.
+\end{equation}
+
+\section{Numerical Solution Using ADI}
+The **Alternating Direction Implicit (ADI) method** solves the equation in **two sequential steps**:
+
+1. **Step 1: Implicit in the \( x \)-direction, explicit in the \( y \)-direction**.
+2. **Step 2: Implicit in the \( y \)-direction, explicit in the \( x \)-direction**.
+
+\subsection{ADI Formulation with Source Term}
+\textbf{Step 1: Implicit in \( x \), Explicit in \( y \)}
+\begin{equation}
+    \frac{u_{i,j}^{*} - u_{i,j}^{n}}{\Delta t/2} = \nu \frac{\partial^2 u^{*}}{\partial x^2} + a \frac{\partial u^{n}}{\partial x} + \nu \frac{\partial^2 u^{n}}{\partial y^2} + b \frac{\partial u^{n}}{\partial y} + S_{i,j}^{n}.
+\end{equation}
+
+\textbf{Step 2: Implicit in \( y \), Explicit in \( x \)}
+\begin{equation}
+    \frac{u_{i,j}^{n+1} - u_{i,j}^{*}}{\Delta t/2} = \nu \frac{\partial^2 u^{n+1}}{\partial y^2} + b \frac{\partial u^{*}}{\partial y} + \nu \frac{\partial^2 u^{*}}{\partial x^2} + a \frac{\partial u^{*}}{\partial x} + S_{i,j}^{*}.
+\end{equation}
+
+\section{Algorithm}
+
+\begin{algorithm}[H]
+\caption{ADI Method for 2D Convection-Diffusion with Source Term}
+\begin{algorithmic}[1]
+\State \textbf{Initialize} domain, grid points, and parameters.
+\State Compute **ADI coefficients** and tridiagonal matrices.
+\For{each time step $t = 1$ to $T/\Delta t$}
+    \State \textbf{Step 1: Implicit in x, Explicit in y}
+    \For{each row $j = 1$ to $N_y-1$}
+        \State Modify RHS to include source term.
+        \State Solve tridiagonal system using Thomas Algorithm.
+    \EndFor
+    \State \textbf{Step 2: Implicit in y, Explicit in x}
+    \For{each column $i = 1$ to $N_x-1$}
+        \State Modify RHS to include source term.
+        \State Solve tridiagonal system using Thomas Algorithm.
+    \EndFor
+    \State Apply boundary conditions.
+    \State Save solution as an image.
+\EndFor
+\State Compile saved images into a video.
+\end{algorithmic}
+\end{algorithm}
+
+\section{Impact of Source Term on the ADI Method}
+The **source term \( S(x,y,t) \) modifies only the right-hand side (RHS)** of the linear system in each ADI step but does not change the structure of the **tridiagonal coefficient matrices**. This allows us to use efficient **Thomas Algorithm-based solvers**.
+
+\subsection{Tridiagonal Matrix Formulation}
+For each implicit step, the discretization leads to a **tridiagonal system**:
+
+\begin{equation}
+    A_x U^* = \mathbf{b}_x, \quad A_y U^{n+1} = \mathbf{b}_y.
+\end{equation}
+
+where:
+
+\begin{align*}
+\sigma_x &= \frac{\nu \Delta t}{dx^2}, \quad \sigma_y = \frac{\nu \Delta t}{dy^2}, \\
+\alpha_x &= 0.5 \left(\sigma_x + \max(0, a \frac{\Delta t}{dx}) \right), \quad
+\beta_x = 0.5 \left(\sigma_x - \min(0, a \frac{\Delta t}{dx}) \right), \\
+\alpha_y &= 0.5 \left(\sigma_y + \max(0, b \frac{\Delta t}{dy}) \right), \quad
+\beta_y = 0.5 \left(\sigma_y - \min(0, b \frac{\Delta t}{dy}) \right).
+\end{align*}
+
+### **Effect on Right-Hand Side (RHS)**
+The source term modifies only the RHS:
+
+\[
+\mathbf{b}_x = u_{i,j}^{n} + \frac{\Delta t}{2} \left[ \nu \frac{\partial^2 u_{i,j}^{n}}{\partial y^2} + b \frac{\partial u_{i,j}^{n}}{\partial y} + S_{i,j}^{n} \right]
+\]
+
+\[
+\mathbf{b}_y = u_{i,j}^{*} + \frac{\Delta t}{2} \left[ \nu \frac{\partial^2 u_{i,j}^{*}}{\partial x^2} + a \frac{\partial u_{i,j}^{*}}{\partial x} + S_{i,j}^{*} \right]
+\]
+
+\section{Conclusion}
+The ADI method efficiently solves the **2D convection-diffusion equation with a source term**. The **coefficient matrices remain unchanged**, ensuring computational efficiency, while the **source term only modifies the RHS**.
+
+\end{document}
